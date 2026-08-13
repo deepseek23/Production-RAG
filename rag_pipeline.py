@@ -98,9 +98,17 @@ def create_kb():
             try:
                 # Try common constructor signatures
                 try:
-                    vector_store = Chroma(persist_directory=persist_dir, embedding=embedding_model)
+                    vector_store = Chroma(
+                        persist_directory=persist_dir,
+                        embedding=embedding_model,
+                        collection_name='my_chroma_db'
+                    )
                 except TypeError:
-                    vector_store = Chroma(persist_directory=persist_dir, embedding_function=embedding_model)
+                    vector_store = Chroma(
+                        persist_directory=persist_dir,
+                        embedding_function=embedding_model,
+                        collection_name='my_chroma_db'
+                    )
                 return vector_store
             except Exception:
                 # Fall through to rebuild if loading fails for any reason
@@ -118,6 +126,7 @@ def create_kb():
         documents=chunks,
         embedding=embedding_model,
         persist_directory=persist_dir,
+        collection_name='my_chroma_db',
     )
 
     # write the new hash for future runs
