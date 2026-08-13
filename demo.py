@@ -1,32 +1,81 @@
 from dotenv import load_dotenv
-from importlib.metadata import version
+from langsmith import traceable
+from langchain_ollama import ChatOllama
+from langchain_core.messages import SystemMessage, HumanMessage
 
 load_dotenv()
 
-core_version = version("langchain-core")
-lg_version = version("langgraph")
-from langchain.chat_models import init_chat_model
+
+# =========================
+# Local Ollama LLM
+# =========================
+
+llm = ChatOllama(
+    model="llama3.1:8b",   # change this to your Ollama model
+    temperature=0
+)
 
 
+# =========================
+# 1. Format Prompt
+# =========================
 
-print(f"langchain-core version: {core_version}")
-print(f"langgraph version: {lg_version}")
+@traceable
+def format_prompt(subject):
+    messages = [
+        SystemMessage(
+            content="You are a helpful AI assistant. "
+                    "Explain concepts clearly and concisely."
+        ),
+        HumanMessage(
+            content=f"Explain the following topic in simple terms:\n\n{subject}"
+        )
+    ]
+
+    return messages
 
 
-def main():
+# =========================
+# 2. Invoke LLM
+# =========================
 
-    # Test openai
-    llm = init_chat_model('groq:llama-3.1-8b-instant', temperature=0)
-    response = llm.invoke("Say 'setup complete!' in one word")
-    print(f"Response from groq: {response}")
+@traceable(run_type="llm")
+def invoke_llm(messages):
+    response = llm.invoke(messages)
 
-    # Test anthropic
-    llm_anthropic = init_chat_model('google_genai:gemini-3.5-flash-lite', temperature=0)
-    response_anthropic = llm_anthropic.invoke("Say 'setup complete!' in one word")
-    print(f"Response from google: {response_anthropic}")
+    return response
 
-    print("Setup complete!")
 
+# =========================
+# 3. Parse Output
+# =========================
+
+@traceable
+def parse_output(response):
+    return response.content.strip()
+
+
+# =========================
+# 4. Complete Pipeline
+# =========================
+
+@traceable
+def run_pipeline():
+    messages = format_prompt("Retrieval Augmented Generation")
+
+    response = invoke_llm(messages)
+
+    answer = parse_output(response)
+
+    return answer
+
+
+# =========================
+# Run
+# =========================
 
 if __name__ == "__main__":
-    main()
+    result = run_pipeline()
+
+    print("\nFinal Answer:\n")
+    print(result)
