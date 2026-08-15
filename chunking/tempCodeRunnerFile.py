@@ -1,0 +1,1 @@
+init_chat_model("ollama:qwen2.5:3b

@@ -1,18 +1,14 @@
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from dotenv import load_dotenv
-load_dotenv()
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+from dotenv import load_dotenv
 import numpy as np
-import os
-
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 
 
-# embeddings = HuggingFaceEmbeddings(
-#         model="BAAI/bge-small-en-v1.5"
-#     )
-embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
+load_dotenv()
+
+embeddings = HuggingFaceEmbeddings(
+        model="BAAI/bge-small-en-v1.5"
+    )
+
 
 def basic_embeddings():
 
@@ -36,6 +32,7 @@ def batch_embeddings():
         print(f"Text {i+1} - Vector dimensions: {len(emb)}")
         print(f"Text {i+1} - First 5 values: {emb[:5]}")
         print(f"Text {i+1} - Vector norm: {np.linalg.norm(emb):.4f}")
+
 
 def similarity_search():
 
@@ -69,7 +66,41 @@ def similarity_search():
     for doc, score in ranked_docs:
         print(f"  {score:.4f}: {doc}")
 
+
+# Caching ---
+def embedding_caching():
+    from langchain_classic.embeddings.cache import CacheBackedEmbeddings
+
+    from langchain_classic.storage import LocalFileStore
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        store = LocalFileStore(root_path=tempdir)
+
+        cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
+            underlying_embeddings=embeddings,
+            document_embedding_cache=store,
+            namespace="exercise",
+        )
+
+        text = "What is Reinforcement Learning?"
+
+        # First call - hits API
+        print("First call (API):")
+        vectors1 = cached_embeddings.embed_documents([text])
+        print(f"  Embedded {len(vectors1)} documents")
+
+        # Second call - from cache
+        print("\nSecond call (Cache):")
+        vectors2 = cached_embeddings.embed_documents([text])
+        print(f"  Embedded {len(vectors2)} documents")
+
+        # Verify same results
+        print(f"\nSame vectors: {np.allclose(vectors1[0], vectors2[0])}")
+
+
 if __name__ == "__main__":
-    # basic_embeddings()
     # batch_embeddings()
-    similarity_search()
+    # basic_embeddings()
+    # similarity_search()
+    embedding_caching()

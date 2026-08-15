@@ -7,7 +7,7 @@ import hashlib
 import json
 from typing import Optional, Callable
 from functools import lru_cache
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langsmith import traceable
 from dotenv import load_dotenv
@@ -21,9 +21,9 @@ class ModelRouter:
     """Route queries to appropriate model based on complexity."""
 
     def __init__(self):
-        self.cheap_model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.cheap_model = ChatOllama(model="granite4:3b", temperature=0)
         self.expensive_model = ChatOpenAI(model="gpt-4o", temperature=0)
-        self.classifier = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.classifier = ChatOllama(model="granite4:3b", temperature=0)
 
     def classify_complexity(self, query: str) -> str:
         """Classify query complexity."""
@@ -104,7 +104,7 @@ class SemanticCache:
     def __init__(self, similarity_threshold: float = 0.9):
         self.cache = {}
         self.threshold = similarity_threshold
-        self.embedder = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.embedder = ChatOllama(model="granite4:3b", temperature=0)
 
     def _hash_query(self, query: str) -> str:
         """Create hash of normalized query."""
@@ -132,12 +132,12 @@ class SemanticCache:
     def stats(self) -> dict:
         return {"cached_queries": len(self.cache)}
 
-
+from langchain_ollama.chat_models import ChatOllama
 class CachedLLM:
     """LLM wrapper with caching."""
 
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.llm = ChatOllama(model="granite4:3b", temperature=0)
         self.cache = SemanticCache()
         self.cache_hits = 0
         self.cache_misses = 0
@@ -237,7 +237,7 @@ class BudgetedLLM:
     """LLM with token budgeting."""
 
     def __init__(self, max_tokens: int = 4000):
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.llm = ChatOllama(model="granite4:3b", temperature=0)
         self.budget = TokenBudget(max_tokens_per_request=max_tokens)
 
     @traceable(name="budgeted_invoke")
@@ -288,8 +288,8 @@ def demo_token_budgeting():
 
 if __name__ == "__main__":
     # demo_model_routing()
-    # demo_caching()
-    demo_token_budgeting()
+    demo_caching()
+    # demo_token_budgeting()
 
     # Production version would:
 # 1. Embed the query into a vector
